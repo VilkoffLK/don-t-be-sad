@@ -1,0 +1,709 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>Уютное убежище для твоего сердца</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&family=Playfair+Display:ital,wght@0,500;0,700;1,400&display=swap" rel="stylesheet">
+  
+  <style>
+    :root {
+      --bg-midnight: #060913;
+      --bg-indigo: #0b112c;
+      --accent-pink: #f472b6;
+      --accent-cyan: #38bdf8;
+      --accent-gold: #fbbf24;
+    }
+
+    * {
+      -webkit-tap-highlight-color: transparent;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+
+    body {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      background-color: var(--bg-midnight);
+      color: #f1f5f9;
+      overflow-x: hidden;
+      touch-action: manipulation;
+      min-height: 100vh;
+      min-height: -webkit-fill-available;
+    }
+
+    .font-serif-soft {
+      font-family: 'Playfair Display', serif;
+    }
+
+    /* Glassmorphism styling */
+    .glass-card {
+      background: rgba(15, 23, 42, 0.65);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.5), inset 0 1px 1px 0 rgba(255, 255, 255, 0.1);
+    }
+
+    .glass-button {
+      background: linear-gradient(135deg, rgba(56, 189, 248, 0.15), rgba(244, 114, 182, 0.2));
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      box-shadow: 0 4px 20px rgba(244, 114, 182, 0.2);
+    }
+
+    .glass-button:active {
+      transform: scale(0.97);
+    }
+
+    /* Ambient glow behind elements */
+    .glow-circle-1 {
+      position: fixed;
+      top: -10%;
+      left: -20%;
+      width: 400px;
+      height: 400px;
+      background: radial-gradient(circle, rgba(99, 102, 241, 0.22) 0%, rgba(99, 102, 241, 0) 70%);
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    .glow-circle-2 {
+      position: fixed;
+      bottom: -10%;
+      right: -20%;
+      width: 450px;
+      height: 450px;
+      background: radial-gradient(circle, rgba(236, 72, 153, 0.18) 0%, rgba(236, 72, 153, 0) 70%);
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    /* Breathing Orb Animations */
+    @keyframes breathingCycle {
+      0%, 100% {
+        transform: scale(0.88);
+        box-shadow: 0 0 45px rgba(56, 189, 248, 0.3), inset 0 0 30px rgba(129, 140, 248, 0.3);
+        border-color: rgba(99, 102, 241, 0.4);
+      }
+      45% {
+        transform: scale(1.15);
+        box-shadow: 0 0 85px rgba(244, 114, 182, 0.65), 0 0 120px rgba(99, 102, 241, 0.4), inset 0 0 45px rgba(253, 164, 175, 0.5);
+        border-color: rgba(244, 114, 182, 0.7);
+      }
+      65% {
+        transform: scale(1.15);
+        box-shadow: 0 0 90px rgba(251, 191, 36, 0.5), inset 0 0 50px rgba(251, 191, 36, 0.4);
+      }
+    }
+
+    .breathing-orb {
+      animation: breathingCycle 12s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+    }
+
+    /* Message animation */
+    @keyframes cardFadeIn {
+      0% {
+        opacity: 0;
+        transform: translateY(16px) scale(0.96);
+      }
+      100% {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+      }
+    }
+
+    .message-pop {
+      animation: cardFadeIn 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    }
+
+    /* Floating bubble styles */
+    .bubble-item {
+      position: absolute;
+      border-radius: 9999px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      transition: transform 0.15s ease-out;
+    }
+  </style>
+</head>
+<body class="relative flex flex-col items-center justify-start min-h-screen text-slate-100 pb-16 selection:bg-pink-500 selection:text-white">
+  
+  <!-- Ambient glow lights -->
+  <div class="glow-circle-1"></div>
+  <div class="glow-circle-2"></div>
+
+  <!-- Interactive touch & starfield canvas -->
+  <canvas id="interactiveCanvas" class="fixed inset-0 w-full h-full pointer-events-auto z-0"></canvas>
+
+  <!-- Top navigation bar -->
+  <header class="relative z-10 w-full max-w-md px-5 pt-6 pb-2 flex items-center justify-between">
+    <div class="flex items-center space-x-2">
+      <span class="w-2.5 h-2.5 rounded-full bg-pink-400 animate-ping"></span>
+      <span class="text-xs uppercase tracking-widest text-slate-300 font-medium">Безопасное пространство</span>
+    </div>
+    
+    <!-- Audio ambient toggle -->
+    <button id="soundToggleBtn" class="flex items-center space-x-1.5 px-3 py-1.5 rounded-full glass-card text-xs text-slate-300 hover:text-white transition active:scale-95" title="Переключить нежные звуки">
+      <span id="soundIcon">🔇</span>
+      <span id="soundText" class="font-normal text-[11px]">Звук выкл</span>
+    </button>
+  </header>
+
+  <main class="relative z-10 w-full max-w-md px-4 flex flex-col space-y-7 mt-2">
+    
+    <!-- Hero Title -->
+    <div class="text-center pt-2">
+      <h1 class="text-3xl font-serif-soft font-bold tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-pink-200 via-sky-100 to-indigo-200">
+        Ты не одина
+      </h1>
+      <p class="text-xs text-slate-400 mt-1.5 font-light leading-relaxed max-w-xs mx-auto">
+        Прикоснись к экрану в любом месте, чтобы зажечь светлячки и сердечки. Позволь себе передохнуть.
+      </p>
+    </div>
+
+    <!-- Section 1: Breathing Orb -->
+    <section class="flex flex-col items-center justify-center pt-1 pb-3">
+      <div class="relative w-64 h-64 flex items-center justify-center">
+        <!-- Interactive orb ring -->
+        <div id="orbGlow" class="breathing-orb absolute inset-3 rounded-full border border-sky-400/30 bg-gradient-to-tr from-indigo-900/60 via-purple-900/40 to-pink-900/50 flex flex-col items-center justify-center p-6 text-center shadow-2xl cursor-pointer select-none">
+          <div class="text-3xl mb-1 filter drop-shadow-md select-none transform transition-transform group-active:scale-110">✨</div>
+          <span id="breathPhaseText" class="text-base font-semibold text-pink-100 tracking-wide">Мягкий вдох</span>
+          <span id="breathSubText" class="text-[11px] text-sky-200/80 mt-1 max-w-[130px] leading-tight">Впусти в сердце спокойствие</span>
+        </div>
+      </div>
+      <p class="text-[11px] text-slate-400/90 mt-2 flex items-center gap-1.5">
+        <span>👇</span> Нажми или удерживай сферу, чтобы согреться
+      </p>
+    </section>
+
+    <!-- Section 2: Jar of Warm Messages -->
+    <section class="glass-card rounded-3xl p-5 border border-white/10 relative overflow-hidden">
+      <div class="flex items-center justify-between mb-3">
+        <div class="flex items-center space-x-2">
+          <span class="text-lg">💌</span>
+          <h2 class="text-sm font-semibold text-slate-200 tracking-wide">Баночка тёплых слов</h2>
+        </div>
+        <span class="text-[10px] text-pink-300/80 uppercase font-medium bg-pink-500/15 px-2.5 py-0.5 rounded-full border border-pink-500/20">Для тебя</span>
+      </div>
+
+      <!-- Active Message Card Area -->
+      <div id="messageCard" class="min-h-[108px] flex items-center justify-center p-4 rounded-2xl bg-indigo-950/40 border border-indigo-500/20 text-center relative mb-4">
+        <p id="messageContent" class="text-sm text-slate-200 font-serif-soft italic leading-relaxed">
+          «Позволь себе сегодня просто быть. Ты уже делаешь всё, что можешь, и этого более чем достаточно.»
+        </p>
+      </div>
+
+      <!-- Action Button -->
+      <button id="getWarmthBtn" class="w-full py-3.5 px-4 rounded-2xl glass-button text-sm font-medium text-white flex items-center justify-center space-x-2 transition shadow-lg active:scale-95 group">
+        <span class="text-pink-300 group-hover:scale-125 transition-transform">💖</span>
+        <span>Мне нужно тепло прямо сейчас</span>
+      </button>
+    </section>
+
+    <!-- Section 3: Bubble Pop calming zone -->
+    <section class="glass-card rounded-3xl p-5 border border-white/10 relative">
+      <div class="flex items-center justify-between mb-2">
+        <div class="flex items-center space-x-2">
+          <span class="text-lg">🫧</span>
+          <h2 class="text-sm font-semibold text-slate-200 tracking-wide">Пузыри спокойствия</h2>
+        </div>
+        <span id="popCount" class="text-xs text-sky-300 font-mono">Лопнуто: 0</span>
+      </div>
+      <p class="text-[11px] text-slate-400 mb-3">Лопай пузырьки с грустинками — растворяй тревогу со звоном колокольчиков</p>
+
+      <!-- Bubble playground container -->
+      <div id="bubbleContainer" class="relative w-full h-44 rounded-2xl bg-slate-900/60 border border-slate-700/40 overflow-hidden touch-none">
+        <!-- Floating bubbles will be rendered dynamically here -->
+      </div>
+    </section>
+
+    <!-- Gentle Reminder / Hug -->
+    <div class="glass-card rounded-2xl p-4 text-center border border-pink-500/10">
+      <div class="text-2xl mb-1">🫂</div>
+      <p class="text-xs text-slate-300 leading-relaxed font-light">
+        Ты справишься со всем, шаг за шагом. Выпей глоток воды, опусти плечи и почувствуй опору под ногами. Завтра будет новый день.
+      </p>
+    </div>
+
+  </main>
+
+  <script>
+    // --- Web Audio API Synthesizer (Zero external dependencies) ---
+    class ComfortSoundEngine {
+      constructor() {
+        this.ctx = null;
+        this.enabled = false;
+        this.pentatonic = [261.63, 293.66, 329.63, 392.00, 440.00, 523.25, 587.33, 659.25]; // C major pentatonic
+      }
+
+      init() {
+        if (!this.ctx) {
+          const AudioContext = window.AudioContext || window.webkitAudioContext;
+          this.ctx = new AudioContext();
+        }
+        if (this.ctx.state === 'suspended') {
+          this.ctx.resume();
+        }
+      }
+
+      toggle() {
+        this.init();
+        this.enabled = !this.enabled;
+        return this.enabled;
+      }
+
+      // Soft musical chime for bubble pop
+      playChime(freqIndex = null) {
+        if (!this.enabled || !this.ctx) return;
+        try {
+          const now = this.ctx.currentTime;
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+
+          const freq = freqIndex !== null 
+            ? this.pentatonic[freqIndex % this.pentatonic.length] 
+            : this.pentatonic[Math.floor(Math.random() * this.pentatonic.length)];
+
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(freq, now);
+
+          gain.gain.setValueAtTime(0.001, now);
+          gain.gain.linearRampToValueAtTime(0.2, now + 0.04);
+          gain.gain.exponentialRampToValueAtTime(0.0001, now + 1.2);
+
+          osc.connect(gain);
+          gain.connect(this.ctx.destination);
+
+          osc.start(now);
+          osc.stop(now + 1.25);
+        } catch (e) {
+          console.warn("Audio error:", e);
+        }
+      }
+
+      // Deep gentle warm chord when receiving a message
+      playWarmHugChord() {
+        if (!this.enabled || !this.ctx) return;
+        try {
+          const freqs = [196.00, 246.94, 293.66, 392.00]; // G major 7th chord
+          const now = this.ctx.currentTime;
+
+          freqs.forEach((f, idx) => {
+            const osc = this.ctx.createOscillator();
+            const gain = this.ctx.createGain();
+
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(f, now);
+
+            gain.gain.setValueAtTime(0.001, now);
+            gain.gain.linearRampToValueAtTime(0.07 / (idx + 1), now + 0.15 + (idx * 0.05));
+            gain.gain.exponentialRampToValueAtTime(0.0001, now + 2.5);
+
+            osc.connect(gain);
+            gain.connect(this.ctx.destination);
+
+            osc.start(now + (idx * 0.04));
+            osc.stop(now + 2.6);
+          });
+        } catch (e) {
+          console.warn("Audio error:", e);
+        }
+      }
+
+      // Resonant deep drone for breathing orb
+      playBreathNote() {
+        if (!this.enabled || !this.ctx) return;
+        try {
+          const now = this.ctx.currentTime;
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+
+          osc.type = 'triangle';
+          osc.frequency.setValueAtTime(174.61, now); // 174 Hz Solfeggio healing frequency tone
+
+          gain.gain.setValueAtTime(0.001, now);
+          gain.gain.linearRampToValueAtTime(0.12, now + 0.3);
+          gain.gain.exponentialRampToValueAtTime(0.0001, now + 2.0);
+
+          osc.connect(gain);
+          gain.connect(this.ctx.destination);
+
+          osc.start(now);
+          osc.stop(now + 2.1);
+        } catch (e) {
+          console.warn("Audio error:", e);
+        }
+      }
+    }
+
+    const soundEngine = new ComfortSoundEngine();
+
+    const soundToggleBtn = document.getElementById('soundToggleBtn');
+    const soundIcon = document.getElementById('soundIcon');
+    const soundText = document.getElementById('soundText');
+
+    soundToggleBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const isOn = soundEngine.toggle();
+      if (isOn) {
+        soundIcon.textContent = '🔔';
+        soundText.textContent = 'Звук вкл';
+        soundToggleBtn.classList.add('border-pink-400/40', 'bg-pink-500/10');
+        soundEngine.playChime(3);
+      } else {
+        soundIcon.textContent = '🔇';
+        soundText.textContent = 'Звук выкл';
+        soundToggleBtn.classList.remove('border-pink-400/40', 'bg-pink-500/10');
+      }
+    });
+
+    // Helper for subtle vibration
+    function softHaptic(ms = 25) {
+      if ('vibrate' in navigator) {
+        try {
+          navigator.vibrate(ms);
+        } catch (err) {}
+      }
+    }
+
+    const canvas = document.getElementById('interactiveCanvas');
+    const ctx = canvas.getContext('2d');
+    let width = (canvas.width = window.innerWidth);
+    let height = (canvas.height = window.innerHeight);
+
+    window.addEventListener('resize', () => {
+      width = canvas.width = window.innerWidth;
+      height = canvas.height = window.innerHeight;
+      initStars();
+    });
+
+    // Background passive stars
+    let stars = [];
+    function initStars() {
+      stars = [];
+      const starCount = Math.floor((width * height) / 8000);
+      for (let i = 0; i < starCount; i++) {
+        stars.push({
+          x: Math.random() * width,
+          y: Math.random() * height,
+          radius: Math.random() * 1.4 + 0.4,
+          alpha: Math.random() * 0.7 + 0.2,
+          speed: Math.random() * 0.008 + 0.003,
+          phase: Math.random() * Math.PI * 2
+        });
+      }
+    }
+    initStars();
+
+    // Touch particles (hearts and shimmering sparks)
+    const touchParticles = [];
+
+    class Particle {
+      constructor(x, y, isHeart = false) {
+        this.x = x;
+        this.y = y;
+        this.isHeart = isHeart;
+        this.size = isHeart ? Math.random() * 14 + 10 : Math.random() * 4 + 2;
+        this.vx = (Math.random() - 0.5) * 2;
+        this.vy = -(Math.random() * 2 + 1.2);
+        this.alpha = 1;
+        this.decay = Math.random() * 0.015 + 0.01;
+        this.hue = Math.random() > 0.4 ? (Math.random() * 40 + 320) : (Math.random() * 40 + 190); // Pinks or Cyan
+        this.rotation = (Math.random() - 0.5) * 0.5;
+        this.angle = Math.random() * Math.PI * 2;
+      }
+
+      update() {
+        this.x += this.vx;
+        this.y += this.vy;
+        this.alpha -= this.decay;
+        this.angle += this.rotation;
+      }
+
+      draw(c) {
+        if (this.alpha <= 0) return;
+        c.save();
+        c.translate(this.x, this.y);
+        c.rotate(this.angle);
+        c.globalAlpha = Math.max(0, this.alpha);
+
+        if (this.isHeart) {
+          c.fillStyle = `hsl(${this.hue}, 90%, 75%)`;
+          c.shadowBlur = 12;
+          c.shadowColor = `hsl(${this.hue}, 100%, 70%)`;
+          
+          const s = this.size / 15;
+          c.beginPath();
+          c.moveTo(0, 0);
+          c.bezierCurveTo(-5 * s, -8 * s, -12 * s, -2 * s, 0, 10 * s);
+          c.bezierCurveTo(12 * s, -2 * s, 5 * s, -8 * s, 0, 0);
+          c.fill();
+        } else {
+          c.fillStyle = `hsl(${this.hue}, 100%, 85%)`;
+          c.shadowBlur = 8;
+          c.shadowColor = `hsl(${this.hue}, 90%, 70%)`;
+          c.beginPath();
+          c.arc(0, 0, this.size, 0, Math.PI * 2);
+          c.fill();
+        }
+
+        c.restore();
+      }
+    }
+
+    // Ripples on tap
+    const ripples = [];
+    class Ripple {
+      constructor(x, y) {
+        this.x = x;
+        this.y = y;
+        this.radius = 5;
+        this.maxRadius = Math.random() * 40 + 40;
+        this.alpha = 0.6;
+        this.speed = 2.5;
+      }
+      update() {
+        this.radius += this.speed;
+        this.alpha -= 0.02;
+      }
+      draw(c) {
+        if (this.alpha <= 0) return;
+        c.save();
+        c.strokeStyle = `rgba(244, 114, 182, ${this.alpha})`;
+        c.lineWidth = 1.5;
+        c.beginPath();
+        c.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+        c.stroke();
+        c.restore();
+      }
+    }
+
+    function spawnTouchBurst(x, y, count = 5) {
+      ripples.push(new Ripple(x, y));
+      for (let i = 0; i < count; i++) {
+        touchParticles.push(new Particle(x, y, Math.random() > 0.4));
+      }
+    }
+
+    // Touch and mouse listeners
+    function handlePointerInteraction(e) {
+      const touches = e.touches ? e.touches : [e];
+      for (let i = 0; i < touches.length; i++) {
+        const t = touches[i];
+        spawnTouchBurst(t.clientX, t.clientY, 3);
+      }
+    }
+
+    window.addEventListener('touchstart', (e) => {
+      handlePointerInteraction(e);
+    }, { passive: true });
+
+    window.addEventListener('touchmove', (e) => {
+      handlePointerInteraction(e);
+    }, { passive: true });
+
+    window.addEventListener('pointerdown', (e) => {
+      if (e.pointerType === 'mouse') {
+        spawnTouchBurst(e.clientX, e.clientY, 4);
+      }
+    });
+
+    // Main animation loop
+    function animateScene() {
+      ctx.clearRect(0, 0, width, height);
+
+      // Render gentle twinkling stars
+      const time = Date.now();
+      for (let i = 0; i < stars.length; i++) {
+        const s = stars[i];
+        const currentAlpha = s.alpha + Math.sin(time * s.speed + s.phase) * 0.25;
+        ctx.fillStyle = `rgba(224, 231, 255, ${Math.max(0.1, currentAlpha)})`;
+        ctx.beginPath();
+        ctx.arc(s.x, s.y, s.radius, 0, Math.PI * 2);
+        ctx.fill();
+      }
+
+      // Render ripples
+      for (let i = ripples.length - 1; i >= 0; i--) {
+        const r = ripples[i];
+        r.update();
+        r.draw(ctx);
+        if (r.alpha <= 0) ripples.splice(i, 1);
+      }
+
+      // Render hearts & sparks
+      for (let i = touchParticles.length - 1; i >= 0; i--) {
+        const p = touchParticles[i];
+        p.update();
+        p.draw(ctx);
+        if (p.alpha <= 0) touchParticles.splice(i, 1);
+      }
+
+      requestAnimationFrame(animateScene);
+    }
+    animateScene();
+
+    const orbGlow = document.getElementById('orbGlow');
+    const breathPhaseText = document.getElementById('breathPhaseText');
+    const breathSubText = document.getElementById('breathSubText');
+
+    const breathingPhases = [
+      { main: "Мягкий вдох...", sub: "Наполняйся светом и покоем", dur: 4500 },
+      { main: "Задержи дыхание...", sub: "Почувствуй тишину внутри", dur: 2500 },
+      { main: "Плавный выдох...", sub: "Отпусти тревогу и напряжение", dur: 5000 }
+    ];
+
+    let currentPhaseIndex = 0;
+    function updateBreathPhase() {
+      const phase = breathingPhases[currentPhaseIndex];
+      breathPhaseText.textContent = phase.main;
+      breathSubText.textContent = phase.sub;
+
+      setTimeout(() => {
+        currentPhaseIndex = (currentPhaseIndex + 1) % breathingPhases.length;
+        updateBreathPhase();
+      }, phase.dur);
+    }
+    updateBreathPhase();
+
+    // Interaction with the orb
+    function triggerOrbAffection(e) {
+      const rect = orbGlow.getBoundingClientRect();
+      const cx = rect.left + rect.width / 2;
+      const cy = rect.top + rect.height / 2;
+
+      spawnTouchBurst(cx, cy, 14);
+      softHaptic(40);
+      soundEngine.playBreathNote();
+
+      orbGlow.style.transform = 'scale(1.22)';
+      setTimeout(() => {
+        orbGlow.style.transform = '';
+      }, 400);
+    }
+
+    orbGlow.addEventListener('pointerdown', triggerOrbAffection);
+
+    const warmMessages = [
+      "Позволь себе сегодня просто быть. Ты уже делаешь всё, что можешь, и этого достаточно.",
+      "Твоя ценность не измеряется продуктивностью или настроением. Ты дорог этому миру и мне просто так.",
+      "Тяжёлые дни проходят, а ты остаёшься. Завернись в плед, выпей чего-нибудь тёплого, мир подождёт.",
+      "Я посылаю тебе самое крепкое мысленное объятие. Твоё сердце справится со всем.",
+      "Даже в самую тёмную ночь звёзды светят ярче всего. Скоро рассвет.",
+      "Ты не обязана быть сильной каждую секунду. Поплакать или погрустить — это тоже бережная забота о себе.",
+      "То, что ты чувствуешь прямо сейчас, абсолютно нормально. Ты в безопасности, дай себе время.",
+      "Ты пережил 100% своих самых сложных дней в жизни. Ты справишься и с сегодняшней тучкой.",
+      "Маленький шаг — это тоже движение вперёд. Гордись тем, что ты просто дышишь.",
+      "Ты удивительная, глубокая и чуткая девушка. Береги своё тепло."
+    ];
+
+    let lastMessageIndex = -1;
+    const messageContent = document.getElementById('messageContent');
+    const messageCard = document.getElementById('messageCard');
+    const getWarmthBtn = document.getElementById('getWarmthBtn');
+
+    getWarmthBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      softHaptic(30);
+      soundEngine.playWarmHugChord();
+
+      let randomIndex;
+      do {
+        randomIndex = Math.floor(Math.random() * warmMessages.length);
+      } while (randomIndex === lastMessageIndex && warmMessages.length > 1);
+
+      lastMessageIndex = randomIndex;
+
+      // Pop burst around the button
+      const rect = getWarmthBtn.getBoundingClientRect();
+      spawnTouchBurst(rect.left + rect.width / 2, rect.top + rect.height / 2, 8);
+
+      // Re-trigger CSS animation
+      messageCard.classList.remove('message-pop');
+      void messageCard.offsetWidth; // Trigger reflow
+      messageContent.textContent = `«${warmMessages[randomIndex]}»`;
+      messageCard.classList.add('message-pop');
+    });
+
+    const bubbleContainer = document.getElementById('bubbleContainer');
+    const popCountEl = document.getElementById('popCount');
+    let popCount = 0;
+
+    const bubbleIcons = ['💙', '🌸', '✨', '☁️', '🫧', '💜', '🌙', '💫'];
+
+    function createBubble() {
+      if (document.hidden) return;
+      const bubble = document.createElement('div');
+      const size = Math.floor(Math.random() * 18 + 42); // 42px to 60px
+      const x = Math.random() * (bubbleContainer.clientWidth - size);
+      const icon = bubbleIcons[Math.floor(Math.random() * bubbleIcons.length)];
+
+      bubble.className = 'bubble-item select-none';
+      bubble.style.width = `${size}px`;
+      bubble.style.height = `${size}px`;
+      bubble.style.left = `${x}px`;
+      bubble.style.bottom = `-60px`;
+      bubble.style.background = 'radial-gradient(circle at 30% 30%, rgba(255,255,255,0.25), rgba(99, 102, 241, 0.2) 60%, rgba(244, 114, 182, 0.3) 100%)';
+      bubble.style.border = '1px solid rgba(255, 255, 255, 0.35)';
+      bubble.style.boxShadow = '0 0 15px rgba(168, 85, 247, 0.3), inset 0 0 8px rgba(255, 255, 255, 0.2)';
+      bubble.innerHTML = `<span style="font-size: ${size * 0.42}px; pointer-events: none;">${icon}</span>`;
+
+      // Floating animation speed
+      const duration = Math.random() * 4000 + 4500;
+      let start = null;
+
+      function floatStep(timestamp) {
+        if (!start) start = timestamp;
+        const progress = (timestamp - start) / duration;
+
+        if (progress < 1 && bubble.parentElement) {
+          const currentY = progress * (bubbleContainer.clientHeight + 80);
+          const wobble = Math.sin(progress * Math.PI * 4) * 12;
+          bubble.style.transform = `translate(${wobble}px, -${currentY}px)`;
+          requestAnimationFrame(floatStep);
+        } else {
+          bubble.remove();
+        }
+      }
+
+      function pop(e) {
+        e.stopPropagation();
+        e.preventDefault();
+        softHaptic(20);
+        soundEngine.playChime(popCount);
+
+        const rect = bubble.getBoundingClientRect();
+        spawnTouchBurst(rect.left + rect.width / 2, rect.top + rect.height / 2, 7);
+
+        popCount++;
+        popCountEl.textContent = `Лопнуто: ${popCount}`;
+
+        // Gentle pop feedback
+        bubble.style.transform += ' scale(1.35)';
+        bubble.style.opacity = '0';
+        bubble.style.transition = 'all 0.15s ease-out';
+        setTimeout(() => bubble.remove(), 150);
+      }
+
+      bubble.addEventListener('pointerdown', pop);
+      bubbleContainer.appendChild(bubble);
+      requestAnimationFrame(floatStep);
+    }
+
+    // Keep bubbles spawning continuously
+    setInterval(createBubble, 1400);
+    // Initial bubbles
+    for (let i = 0; i < 3; i++) {
+      setTimeout(createBubble, i * 400);
+    }
+  </script>
+</body>
+</html>
